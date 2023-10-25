@@ -234,25 +234,53 @@ namespace SuperUnityBuild.BuildTool
         private static void ConfigureEnvironment(BuildReleaseType releaseType, BuildPlatform platform, BuildArchitecture architecture,
             BuildScriptingBackend scriptingBackend, BuildDistribution distribution, DateTime buildTime, string constantsFileLocation)
         {
+            // if headless, set dedicated server build
+            bool isServerBuild = releaseType.buildOptions == BuildOptions.EnableHeadlessMode;
+            if (isServerBuild)
+            {
+                EditorUserBuildSettings.standaloneBuildSubtarget = StandaloneBuildSubtarget.Server;
+            }
+
             // Switch to target build platform
             EditorUserBuildSettings.SwitchActiveBuildTarget(platform.targetGroup, architecture.target);
 
             // Adjust scripting backend
-            PlayerSettings.SetScriptingBackend(platform.targetGroup, scriptingBackend.scriptingImplementation);
+            if (isServerBuild)
+            {
+                PlayerSettings.SetScriptingBackend(NamedBuildTarget.Server, scriptingBackend.scriptingImplementation);
+            }
+            else
+            {
+                PlayerSettings.SetScriptingBackend(platform.targetGroup, scriptingBackend.scriptingImplementation);
+            }
 
             // Apply defines
-            string preBuildDefines = PlayerSettings.GetScriptingDefineSymbolsForGroup(platform.targetGroup);
+            string preBuildDefines = isServerBuild ? PlayerSettings.GetScriptingDefineSymbols(NamedBuildTarget.Server) : PlayerSettings.GetScriptingDefineSymbolsForGroup(platform.targetGroup);
             string buildDefines = GenerateDefaultDefines(releaseType, platform, architecture, scriptingBackend, distribution);
             buildDefines = MergeDefines(preBuildDefines, buildDefines);
 
-            PlayerSettings.SetScriptingDefineSymbolsForGroup(platform.targetGroup, buildDefines);
+            if (isServerBuild)
+            {
+                PlayerSettings.SetScriptingDefineSymbols(NamedBuildTarget.Server, buildDefines);
+            }
+            else
+            {
+                PlayerSettings.SetScriptingDefineSymbolsForGroup(platform.targetGroup, buildDefines);
+            }
 
             // Set target settings
             PlayerSettings.companyName = releaseType.companyName;
             PlayerSettings.productName = releaseType.productName;
 
             // Set bundle info
-            PlayerSettings.SetApplicationIdentifier(platform.targetGroup, releaseType.bundleIdentifier);
+            if (isServerBuild)
+            {
+                PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Server, releaseType.bundleIdentifier);
+            }
+            else
+            {
+                PlayerSettings.SetApplicationIdentifier(platform.targetGroup, releaseType.bundleIdentifier);
+            }
 
             // Apply build variant
             platform.ApplyVariant();
@@ -385,6 +413,7 @@ namespace SuperUnityBuild.BuildTool
             string constantsFileLocation, string configKey)
         {
             bool success = true;
+            bool isServerBuild = releaseType.buildOptions == BuildOptions.EnableHeadlessMode;
 
             if (options == BuildOptions.None)
             {
@@ -392,11 +421,11 @@ namespace SuperUnityBuild.BuildTool
             }
 
             // Save current environment settings
-            string preBuildDefines = PlayerSettings.GetScriptingDefineSymbolsForGroup(platform.targetGroup);
+            string preBuildDefines = isServerBuild ? PlayerSettings.GetScriptingDefineSymbols(NamedBuildTarget.Server) : PlayerSettings.GetScriptingDefineSymbolsForGroup(platform.targetGroup);
             string preBuildCompanyName = PlayerSettings.companyName;
             string preBuildProductName = PlayerSettings.productName;
-            string preBuildBundleIdentifier = PlayerSettings.GetApplicationIdentifier(platform.targetGroup);
-            ScriptingImplementation preBuildImplementation = PlayerSettings.GetScriptingBackend(platform.targetGroup);
+            string preBuildBundleIdentifier = isServerBuild ? PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Server) : PlayerSettings.GetApplicationIdentifier(platform.targetGroup);
+            ScriptingImplementation preBuildImplementation = isServerBuild ? PlayerSettings.GetScriptingBackend(NamedBuildTarget.Server) : PlayerSettings.GetScriptingBackend(platform.targetGroup);
 
             // Configure environment settings to match the build configuration
             ConfigureEnvironment(releaseType, platform, architecture, scriptingBackend, distribution, buildTime, constantsFileLocation);
@@ -429,7 +458,8 @@ namespace SuperUnityBuild.BuildTool
                 locationPathName = Path.Combine(buildPath, binName),
                 options = options,
                 scenes = releaseType.sceneList.GetActiveSceneFileList(),
-                target = architecture.target
+                subtarget = isServerBuild ? (int) StandaloneBuildSubtarget.Server : 0,
+                target = isServerBuild ? BuildTarget.StandaloneLinux64 : architecture.target,
             });
 
             if (buildReport.summary.result == BuildResult.Failed)
@@ -451,11 +481,22 @@ namespace SuperUnityBuild.BuildTool
             PerformPostBuild(releaseType, platform, architecture, scriptingBackend, distribution, buildTime, ref options, configKey, buildPath);
 
             // Restore pre-build environment settings
-            PlayerSettings.SetScriptingDefineSymbolsForGroup(platform.targetGroup, preBuildDefines);
-            PlayerSettings.companyName = preBuildCompanyName;
-            PlayerSettings.productName = preBuildProductName;
-            PlayerSettings.SetApplicationIdentifier(platform.targetGroup, preBuildBundleIdentifier);
-            PlayerSettings.SetScriptingBackend(platform.targetGroup, preBuildImplementation);
+            if (isServerBuild)
+            {
+                PlayerSettings.SetScriptingDefineSymbols(NamedBuildTarget.Server, preBuildDefines);
+                PlayerSettings.companyName = preBuildCompanyName;
+                PlayerSettings.productName = preBuildProductName;
+                PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Server, preBuildBundleIdentifier);
+                PlayerSettings.SetScriptingBackend(NamedBuildTarget.Server, preBuildImplementation);
+            }
+            else
+            {
+                PlayerSettings.SetScriptingDefineSymbolsForGroup(platform.targetGroup, preBuildDefines);
+                PlayerSettings.companyName = preBuildCompanyName;
+                PlayerSettings.productName = preBuildProductName;
+                PlayerSettings.SetApplicationIdentifier(platform.targetGroup, preBuildBundleIdentifier);
+                PlayerSettings.SetScriptingBackend(platform.targetGroup, preBuildImplementation);
+            }
 
             return success;
         }
