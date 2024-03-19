@@ -7,6 +7,8 @@ using UnityEngine;
 
 namespace SuperUnityBuild.BuildTool
 {
+    using System.Text;
+
     public static class BuildConstantsGenerator
     {
         public const string NONE = "None";
@@ -65,12 +67,7 @@ namespace SuperUnityBuild.BuildTool
             string architectureString = currentBuildArchitecture == null ? NONE : SanitizeString(currentBuildArchitecture.name);
             string distributionString = currentBuildDistribution == null ? NONE : SanitizeString(currentBuildDistribution.distributionName);
 
-            if (File.Exists(finalFileLocation))
-            {
-                // Delete existing version.
-                File.Delete(finalFileLocation);
-            }
-            else
+            if (!File.Exists(finalFileLocation))
             {
                 // Ensure desired path exists if generating for the first time.
                 var fileInfo = new FileInfo(finalFileLocation);
@@ -83,7 +80,8 @@ namespace SuperUnityBuild.BuildTool
             // Create a buffer that we'll use to check for any duplicated names.
             List<string> enumBuffer = new List<string>();
 
-            using (StreamWriter writer = new StreamWriter(finalFileLocation))
+            StringBuilder sb = new StringBuilder();
+            using (StringWriter writer = new StringWriter(sb))
             {
                 // Start of file
                 writer.WriteLine("using System;");
@@ -230,7 +228,7 @@ namespace SuperUnityBuild.BuildTool
                 writer.WriteLine("    {");
 
                 // Write current values.
-                writer.WriteLine("        public static readonly DateTime buildDate = new DateTime({0});", buildTime.Ticks);
+                // writer.WriteLine("        public static readonly DateTime buildDate = new DateTime({0});", buildTime.Ticks);
                 writer.WriteLine("        public const string version = \"{0}\";", versionString);
                 writer.WriteLine("        public const ReleaseType releaseType = ReleaseType.{0};", releaseTypeString);
                 writer.WriteLine("        public const Platform platform = Platform.{0};", platformString);
@@ -244,8 +242,33 @@ namespace SuperUnityBuild.BuildTool
                 writer.WriteLine();
             }
 
+            // Write to file.
+            bool fileWritten = false;
+            if (File.Exists(finalFileLocation))
+            {
+                string newFileContents = sb.ToString();
+                string oldFileContents = File.ReadAllText(finalFileLocation, System.Text.Encoding.UTF8);
+                if (newFileContents != oldFileContents)
+                {
+                    Debug.Log(oldFileContents);
+                    Debug.Log(newFileContents);
+
+                    File.WriteAllText(finalFileLocation, newFileContents, System.Text.Encoding.UTF8);
+                    fileWritten = true;
+                }
+            }
+            else
+            {
+                File.WriteAllText(finalFileLocation, sb.ToString());
+                fileWritten = true;
+            }
+
             // Refresh AssetDatabse so that changes take effect.
-            AssetDatabase.Refresh();
+            if (fileWritten)
+            {
+                Debug.Log("BuildConstants.cs generated at: " + finalFileLocation);
+                AssetDatabase.Refresh();
+            }
         }
 
         private static string SanitizeString(string str)
