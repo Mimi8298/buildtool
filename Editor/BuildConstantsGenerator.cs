@@ -47,6 +47,7 @@ namespace SuperUnityBuild.BuildTool
             BuildArchitecture currentBuildArchitecture = null,
             BuildDistribution currentBuildDistribution = null)
         {
+            return;
             // Find the BuildConstants file.
             string currentFilePath = FindFile();
             string finalFileLocation;
