@@ -3,6 +3,8 @@ using System.Text;
 
 namespace SuperUnityBuild.BuildTool
 {
+    using UnityEditor;
+
     public static class TokensUtility
     {
         public static string ResolveBuildConfigurationTokens(string prototype, BuildReleaseType releaseType, BuildPlatform platform, BuildArchitecture architecture, BuildScriptingBackend scriptingBackend, BuildDistribution distribution, DateTime? buildTime)
@@ -32,7 +34,7 @@ namespace SuperUnityBuild.BuildTool
         public static string ResolveBuildNumberToken(string prototype)
         {
             return (prototype ?? "")
-                .Replace("$BUILD", BuildSettings.productParameters.buildCounter.ToString());
+                .Replace("$BUILD", PlayerSettings.Android.bundleVersionCode.ToString());
         }
 
         public static string ResolveBuildOutputTokens(string prototype, string buildPath)
@@ -54,7 +56,7 @@ namespace SuperUnityBuild.BuildTool
         public static string ResolveBuildVersionToken(string prototype)
         {
             return (prototype ?? "")
-                .Replace("$VERSION", BuildSettings.productParameters.buildVersion.SanitizeFolderName());
+                .Replace("$VERSION", PlayerSettings.bundleVersion);
         }
 
         public static string ResolveBuildVersionTokens(string prototype)

@@ -28,40 +28,9 @@ namespace SuperUnityBuild.BuildTool
                 float currentLabelWidth = EditorGUIUtility.labelWidth;
                 EditorGUIUtility.labelWidth = 200;
 
-                SerializedProperty autoGenerate = property.FindPropertyRelative("autoGenerate");
-                SerializedProperty syncWithPlayerSettings = property.FindPropertyRelative("syncWithPlayerSettings");
-
-                EditorGUI.BeginDisabledGroup(syncWithPlayerSettings.boolValue);
-                EditorGUI.BeginDisabledGroup(true);
-                EditorGUILayout.PropertyField(property.FindPropertyRelative("buildVersion"));
-                EditorGUI.EndDisabledGroup();
-
-                EditorGUILayout.PropertyField(property.FindPropertyRelative("versionTemplate"));
-
-                EditorGUILayout.PropertyField(property.FindPropertyRelative("autoGenerate"), new GUIContent("Auto-Generate Version"));
-                EditorGUI.EndDisabledGroup();
-
-                EditorGUI.BeginDisabledGroup(autoGenerate.boolValue);
-                EditorGUILayout.PropertyField(property.FindPropertyRelative("syncWithPlayerSettings"), new GUIContent("Sync Version with Player Settings"));
-                EditorGUI.EndDisabledGroup();
-
-                if (syncWithPlayerSettings.boolValue)
-                {
-                    property.FindPropertyRelative("versionTemplate").stringValue = PlayerSettings.bundleVersion;
-                    property.FindPropertyRelative("buildVersion").stringValue = PlayerSettings.bundleVersion;
-                }
-                else
-                {
-                    EditorGUILayout.PropertyField(property.FindPropertyRelative("buildCounter"));
-
-                    if (GUILayout.Button("Reset Build Counter", GUILayout.ExpandWidth(true)))
-                        property.FindPropertyRelative("buildCounter").intValue = 0;
-                }
-
-                if (!autoGenerate.boolValue && !syncWithPlayerSettings.boolValue && GUILayout.Button("Generate Version Now", GUILayout.ExpandWidth(true)))
-                {
-                    BuildProject.GenerateVersionString(BuildSettings.productParameters, DateTime.Now);
-                }
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("awsRegion"));
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("awsBuildCounterFunctionUrl"));
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("awsBuildVersionFunctionUrl"));
 
                 property.serializedObject.ApplyModifiedProperties();
 

@@ -159,47 +159,6 @@ namespace SuperUnityBuild.BuildTool
             return string.Join(";", defines.ToArray());
         }
 
-        public static string GenerateVersionString(ProductParameters productParameters, DateTime buildTime)
-        {
-            // Increment build number
-            ++productParameters.buildCounter;
-
-            // Build version string
-            string prototype = TokensUtility.ResolveBuildNumberToken(productParameters.versionTemplate);
-            prototype = TokensUtility.ResolveBuildTimeTokens(prototype, buildTime);
-
-            StringBuilder sb = new StringBuilder(prototype);
-
-            // Regex = (?:\$DAYSSINCE\(")([^"]*)(?:"\))
-            Match match = Regex.Match(prototype, "(?:\\$DAYSSINCE\\(\")([^\"]*)(?:\"\\))");
-            while (match.Success)
-            {
-                int daysSince = (DateTime.TryParse(match.Groups[1].Value, out DateTime parsedTime)) ?
-                    buildTime.Subtract(parsedTime).Days :
-                    0;
-
-                sb.Replace(match.Captures[0].Value, daysSince.ToString());
-                match = match.NextMatch();
-            }
-
-            ReplaceFromFile(sb, "$NOUN", "nouns.txt");
-            ReplaceFromFile(sb, "$ADJECTIVE", "adjectives.txt");
-
-            sb.Replace("$SECONDS", (buildTime.TimeOfDay.TotalSeconds / 15f).ToString("F0"));
-
-            string version = sb.ToString();
-
-            productParameters.buildVersion = version;
-            PlayerSettings.bundleVersion = version;
-
-            // Increment build numbers for supported platforms
-            PlayerSettings.Android.bundleVersionCode = PlayerSettings.Android.bundleVersionCode + 1;
-            PlayerSettings.iOS.buildNumber = $"{int.Parse(PlayerSettings.iOS.buildNumber) + 1}";
-            PlayerSettings.macOS.buildNumber = $"{int.Parse(PlayerSettings.macOS.buildNumber) + 1}";
-
-            return version;
-        }
-
         public static string GenerateBuildPath(string prototype, BuildReleaseType releaseType, BuildPlatform platform, BuildArchitecture arch,
             BuildScriptingBackend scriptingBackend, BuildDistribution dist, DateTime buildTime)
         {
@@ -285,10 +244,6 @@ namespace SuperUnityBuild.BuildTool
 
             // Apply build variant
             platform.ApplyVariant();
-
-            // Generate BuildConstants
-            BuildConstantsGenerator.Generate(buildTime, constantsFileLocation, BuildSettings.productParameters.buildVersion,
-                releaseType, platform, scriptingBackend, architecture, distribution);
 
             // Refresh scene list to make sure nothing has been deleted or moved
             releaseType.sceneList.Refresh();
@@ -508,12 +463,6 @@ namespace SuperUnityBuild.BuildTool
 
             // Clear any old notifications.
             BuildNotificationList.instance.RefreshAll();
-
-            // Generate version string.
-            if (BuildSettings.productParameters.autoGenerate)
-            {
-                GenerateVersionString(BuildSettings.productParameters, buildTime);
-            }
 
             // Run pre-build actions.
             PerformBuildActions(BuildSettings.preBuildActions.buildActions, "Pre-");
