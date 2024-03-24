@@ -415,7 +415,7 @@ namespace SuperUnityBuild.BuildTool
                 options = options,
                 scenes = releaseType.sceneList.GetActiveSceneFileList(),
                 subtarget = isServerBuild ? (int) StandaloneBuildSubtarget.Server : 0,
-                target = isServerBuild ? BuildTarget.StandaloneLinux64 : architecture.target,
+                target = isServerBuild ? BuildTarget.StandaloneLinux64 : architecture.target
             });
 
             if (buildReport.summary.result == BuildResult.Failed)

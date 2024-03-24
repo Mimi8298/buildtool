@@ -24,7 +24,7 @@ namespace SuperUnityBuild.BuildTool
 
                 return _instance;
             }
-            internal set
+            set
             {
                 _instance = value;
                 EditorPrefs.SetString(SettingsPrefsKey, AssetDatabase.GetAssetPath(_instance));
@@ -112,7 +112,7 @@ namespace SuperUnityBuild.BuildTool
                 //Set this as the current BuildSettings to be used
                 BuildSettings.instance = this;
 
-                //Tell the window to use the new settings 
+                //Tell the window to use the new settings
                 thisWindow.RefreshSelectedBuildSettings();
             }
 
