@@ -195,7 +195,7 @@ namespace SuperUnityBuild.BuildTool
             BuildScriptingBackend scriptingBackend, BuildDistribution distribution, DateTime buildTime, string constantsFileLocation)
         {
             // if headless, set dedicated server build
-            bool isServerBuild = releaseType.buildOptions == BuildOptions.EnableHeadlessMode;
+            bool isServerBuild = (releaseType.buildOptions & BuildOptions.EnableHeadlessMode) != 0;
             if (isServerBuild)
             {
                 EditorUserBuildSettings.standaloneBuildSubtarget = StandaloneBuildSubtarget.Server;
@@ -369,7 +369,7 @@ namespace SuperUnityBuild.BuildTool
             string constantsFileLocation, string configKey)
         {
             bool success = true;
-            bool isServerBuild = releaseType.buildOptions == BuildOptions.EnableHeadlessMode;
+            bool isServerBuild = ((releaseType.buildOptions | options) & BuildOptions.EnableHeadlessMode) != 0;
 
             if (options == BuildOptions.None)
             {
